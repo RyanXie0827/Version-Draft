@@ -16,62 +16,54 @@ version = providers.gradleProperty("pluginVersion").get()
 
 // Set the JVM language level used to build the project.
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(17)
 }
 
 // Configure project's dependencies
 repositories {
     mavenCentral()
 
-    // IntelliJ Platform Gradle Plugin Repositories Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-repositories-extension.html
+    // IntelliJ Platform Gradle Plugin Repositories Extension
     intellijPlatform {
         defaultRepositories()
     }
 }
 
-// Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/version_catalogs.html
+// Dependencies are managed with Gradle version catalog
 dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 
-    // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
         intellijIdea(providers.gradleProperty("platformVersion"))
-
-        // Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
         bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
-
-        // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
         plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
-
-        // Module Dependencies. Uses `platformBundledModules` property from the gradle.properties file for bundled IntelliJ Platform modules.
         bundledModules(providers.gradleProperty("platformBundledModules").map { it.split(',') })
-
         testFramework(TestFrameworkType.Platform)
     }
 }
 
-// Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
+// Configure IntelliJ Platform Gradle Plugin
 intellijPlatform {
     pluginConfiguration {
         name = providers.gradleProperty("pluginName")
         version = providers.gradleProperty("pluginVersion")
 
-        // Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
-        description = providers.fileContents(layout.projectDirectory.file("README.md")).asText.map {
-            val start = "<!-- Plugin description -->"
-            val end = "<!-- Plugin description end -->"
+        description = """
+            <p><b>Version Draft</b> is an ultimate lightweight IntelliJ IDEA plugin designed for developers to manage release notes, changelogs, and task checklists seamlessly within the IDE. It integrates natively with your project's <code>CHANGELOG.md</code> file without any external database dependencies.</p>
+            <br>
+            <p><b>Version Draft (发版草稿本)</b> 是一款将 Markdown 发挥到极致的极简 IDEA 侧边栏插件。</p>
+            <p>它完全基于你项目根目录的 <code>CHANGELOG.md</code> 文件，不依赖任何外部数据库，天然完美契合 Git 工作流。不仅是记录工具，它更是你当前版本的 <b>发版 Checklist 看板</b>。</p>
+            <h3>✨ 核心特性 (Core Features)</h3>
+            <ul>
+              <li>⚡ <b>极速沉浸录入</b>：全局快捷键一键唤起录入面板，支持版本重复拦截与非空校验。</li>
+              <li>🌳 <b>原生高亮分屏</b>：右侧专属 Tool Window，完美支持 SQL、YAML、Java 等多语言的语法高亮呈现。</li>
+              <li>✅ <b>Checklist 看板模式</b>：支持将单条记录或整个需求标记为“已发版 (Released)”，一键过滤。</li>
+              <li>🔍 <b>极客级搜索</b>：快捷键唤起全局搜索面板，支持全文检索与实时代码预览。</li>
+            </ul>
+        """.trimIndent()
 
-            with(it.lines()) {
-                if (!containsAll(listOf(start, end))) {
-                    throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
-                }
-                subList(indexOf(start) + 1, indexOf(end)).joinToString("\n").let(::markdownToHTML)
-            }
-        }
-
-        val changelog = project.changelog // local variable for configuration cache compatibility
-        // Get the latest available change notes from the changelog file
+        val changelog = project.changelog
         changeNotes = providers.gradleProperty("pluginVersion").map { pluginVersion ->
             with(changelog) {
                 renderItem(
@@ -96,9 +88,6 @@ intellijPlatform {
 
     publishing {
         token = providers.environmentVariable("PUBLISH_TOKEN")
-        // The pluginVersion is based on the SemVer (https://semver.org) and supports pre-release labels, like 2.1.7-alpha.3
-        // Specify pre-release label to publish the plugin in a custom Release Channel automatically. Read more:
-        // https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html#specifying-a-release-channel
         channels = providers.gradleProperty("pluginVersion").map { listOf(it.substringAfter('-', "").substringBefore('.').ifEmpty { "default" }) }
     }
 
@@ -109,14 +98,14 @@ intellijPlatform {
     }
 }
 
-// Configure Gradle Changelog Plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
+// Configure Gradle Changelog Plugin
 changelog {
     groups.empty()
     repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
     versionPrefix = ""
 }
 
-// Configure Gradle Kover Plugin - read more: https://kotlin.github.io/kotlinx-kover/gradle-plugin/#configuration-details
+// Configure Gradle Kover Plugin
 kover {
     reports {
         total {
@@ -145,7 +134,7 @@ intellijPlatformTesting {
                     listOf(
                         "-Drobot-server.port=8082",
                         "-Dide.mac.message.dialogs.as.sheets=false",
-                        "-Djb.privacy.policy.text=<!--999.999-->",
+                        "-Djb.privacy.policy.text=",
                         "-Djb.consents.confirmation.enabled=false",
                     )
                 }
